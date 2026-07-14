@@ -214,6 +214,15 @@ Office.onReady((info) => {
     document.getElementById("persona-input").value =
       localStorage.getItem(PERSONA_STORAGE_KEY) || "";
 
+    // Persist Plan Mode setting
+    const planCheckbox = document.getElementById("chat-option-plan");
+    if (planCheckbox) {
+      planCheckbox.checked = localStorage.getItem("chat-option-plan-active") === "true";
+      planCheckbox.addEventListener("change", (e) => {
+        localStorage.setItem("chat-option-plan-active", e.target.checked ? "true" : "false");
+      });
+    }
+
     // Ask the static server whether a harness vault was detected on this
     // machine, and switch the Settings tab to harness mode if so. Best-effort:
     // on webpack dev-server / nginx (no /harness-info) or any error, this
@@ -1365,6 +1374,18 @@ function buildPromptParts(text, documentContext, selectedText, hiddenInstruction
 
   const docText = lastDocumentText || documentContext || "";
   hidden.push(buildDocumentIdentityBlock(docText));
+
+  const planCheckbox = document.getElementById("chat-option-plan");
+  if (planCheckbox && planCheckbox.checked) {
+    hidden.push(
+      "PLAN MODE IS ACTIVE:\n" +
+      "The user has explicitly requested to run in Plan Mode. " +
+      "Do NOT run any document mutation/write tools (such as write_cell, write_text, format, edit, etc.) or modify the document/worksheet/presentation yet. " +
+      "Instead, analyze the user's query and target document context, and propose a detailed, step-by-step plan specifying exactly what changes you would make. " +
+      "Ask the user to confirm/approve the plan before making any actual modifications."
+    );
+  }
+
   if (selectedText) {
     hidden.push(
       "Context: the user currently has the text below highlighted/selected in the document, right now, as of " +

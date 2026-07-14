@@ -470,12 +470,41 @@ body {
     background-color: #e1d4f7;
 }
 
+.chat-input-area {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid #edebe9;
+    background-color: #fff;
+}
+
+.chat-options-bar {
+    display: flex;
+    padding: 6px 12px 0 12px;
+    font-size: 11px;
+    align-items: center;
+}
+
+.chat-option-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    color: #605e5c;
+    font-weight: 500;
+    user-select: none;
+}
+
+.chat-option-label input {
+    margin: 0;
+    cursor: pointer;
+}
+
 .chat-input-row {
     flex: 0 0 auto;
     display: flex;
     gap: 8px;
-    padding: 10px 12px;
-    border-top: 1px solid #edebe9;
+    padding: 8px 12px 10px 12px;
 }
 
 .chat-input {
