@@ -59,25 +59,7 @@
               </Group>
             </OfficeTab>
           </ExtensionPoint>
-          <ExtensionPoint xsi:type="ContextMenu">
-            <OfficeMenu id="ContextMenuText">
-              <Control xsi:type="Button" id="WordAnalyzeContextMenuButton">
-                <Label resid="ContextMenuButton.Label" />
-                <Supertip>
-                  <Title resid="ContextMenuButton.Label" />
-                  <Description resid="ContextMenuButton.Tooltip" />
-                </Supertip>
-                <Icon>
-                  <bt:Image size="16" resid="Icon.16x16" />
-                  <bt:Image size="32" resid="Icon.32x32" />
-                  <bt:Image size="80" resid="Icon.80x80" />
-                </Icon>
-                <Action xsi:type="ExecuteFunction">
-                  <FunctionName>analyzeSelectionAction</FunctionName>
-                </Action>
-              </Control>
-            </OfficeMenu>
-          </ExtensionPoint>
+
         </DesktopFormFactor>
       </Host>
       <Host xsi:type="Presentation">
@@ -115,25 +97,7 @@
               </Group>
             </OfficeTab>
           </ExtensionPoint>
-          <ExtensionPoint xsi:type="ContextMenu">
-            <OfficeMenu id="ContextMenuText">
-              <Control xsi:type="Button" id="PowerPointAnalyzeContextMenuButton">
-                <Label resid="ContextMenuButton.Label" />
-                <Supertip>
-                  <Title resid="ContextMenuButton.Label" />
-                  <Description resid="ContextMenuButton.Tooltip" />
-                </Supertip>
-                <Icon>
-                  <bt:Image size="16" resid="Icon.16x16" />
-                  <bt:Image size="32" resid="Icon.32x32" />
-                  <bt:Image size="80" resid="Icon.80x80" />
-                </Icon>
-                <Action xsi:type="ExecuteFunction">
-                  <FunctionName>analyzeSelectionAction</FunctionName>
-                </Action>
-              </Control>
-            </OfficeMenu>
-          </ExtensionPoint>
+
         </DesktopFormFactor>
       </Host>
       <Host xsi:type="Workbook">
@@ -171,25 +135,7 @@
               </Group>
             </OfficeTab>
           </ExtensionPoint>
-          <ExtensionPoint xsi:type="ContextMenu">
-            <OfficeMenu id="ContextMenuCell">
-              <Control xsi:type="Button" id="ExcelAnalyzeContextMenuButton">
-                <Label resid="ContextMenuButton.Label" />
-                <Supertip>
-                  <Title resid="ContextMenuButton.Label" />
-                  <Description resid="ContextMenuButton.Tooltip" />
-                </Supertip>
-                <Icon>
-                  <bt:Image size="16" resid="Icon.16x16" />
-                  <bt:Image size="32" resid="Icon.32x32" />
-                  <bt:Image size="80" resid="Icon.80x80" />
-                </Icon>
-                <Action xsi:type="ExecuteFunction">
-                  <FunctionName>analyzeSelectionAction</FunctionName>
-                </Action>
-              </Control>
-            </OfficeMenu>
-          </ExtensionPoint>
+
         </DesktopFormFactor>
       </Host>
     </Hosts>

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "permission": {
+    "external_directory": "allow"
+  },
+  "mcp": {
+    "word": {
+      "type": "local",
+      "command": ["uv", "run", "--with", "word-mcp-live", "scripts/word_mcp_launcher.py"],
+      "enabled": true,
+      "timeout": 90000,
+      "environment": {
+        "MCP_AUTHOR": "Gu Chao",
+        "MCP_AUTHOR_INITIALS": "GC"
+      }
+    }
+  }
+}

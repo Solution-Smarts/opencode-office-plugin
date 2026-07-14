@@ -154,6 +154,56 @@ Office.onReady((info) => {
       Office.context.document.settings.saveAsync();
     }
 
+    if (info.host === Office.HostType.Excel) {
+      document.getElementById("excel-interactive-panel").style.display = "flex";
+
+      const updateSelectionLabel = () => {
+        if (typeof Excel !== "undefined" && Excel.run) {
+          Excel.run(async (context) => {
+            const range = context.workbook.getSelectedRange();
+            range.load("address");
+            await context.sync();
+            document.getElementById("excel-selection-status").innerText = `Selected Range: ${range.address}`;
+          }).catch(() => {});
+        }
+      };
+
+      Office.context.document.addHandlerAsync(
+        Office.EventType.DocumentSelectionChanged,
+        updateSelectionLabel
+      );
+
+      updateSelectionLabel();
+
+      document.getElementById("excel-btn-selection").addEventListener("click", () => {
+        if (typeof Excel !== "undefined" && Excel.run) {
+          Excel.run(async (context) => {
+            const range = context.workbook.getSelectedRange();
+            range.load("address");
+            await context.sync();
+            const input = document.getElementById("chat-input");
+            input.value = `Analyze the selected Excel cells in range ${range.address}: `;
+            onChatInputChanged();
+            input.focus();
+          }).catch(() => {});
+        }
+      });
+
+      document.getElementById("excel-btn-sheet").addEventListener("click", () => {
+        if (typeof Excel !== "undefined" && Excel.run) {
+          Excel.run(async (context) => {
+            const sheet = context.workbook.worksheets.getActiveWorksheet();
+            sheet.load("name");
+            await context.sync();
+            const input = document.getElementById("chat-input");
+            input.value = `Analyze the active Excel worksheet "${sheet.name}": `;
+            onChatInputChanged();
+            input.focus();
+          }).catch(() => {});
+        }
+      });
+    }
+
     // One-time migration of the pre-rework harness-root setting, then re-fill
     // the Settings fields from what the user saved last time. The fields only
     // live in localStorage - they take effect via the hidden first-message
@@ -180,48 +230,7 @@ Office.onReady((info) => {
     // becoming interactive.
     initializeDocumentSuggestions();
 
-    // Listen for contextMenuTrigger from localStorage to auto-submit right-click analyses
-    window.addEventListener("storage", (event) => {
-      if (event.key === "contextMenuTrigger" && event.newValue) {
-        try {
-          const data = JSON.parse(event.newValue);
-          if (data && data.action === "analyze" && data.content) {
-            const input = document.getElementById("chat-input");
-            input.value = `Analyze this selection: "${data.content}"`;
-            onChatInputChanged();
-            localStorage.removeItem("contextMenuTrigger");
-            const form = document.getElementById("chat-form");
-            if (form) {
-              form.requestSubmit();
-            }
-          }
-        } catch (e) {
-          console.error("Failed to parse contextMenuTrigger:", e);
-        }
-      }
-    });
 
-    // Check on startup for any pending context menu analysis trigger
-    const pendingTrigger = localStorage.getItem("contextMenuTrigger");
-    if (pendingTrigger) {
-      try {
-        const data = JSON.parse(pendingTrigger);
-        if (data && data.action === "analyze" && data.content) {
-          setTimeout(() => {
-            const input = document.getElementById("chat-input");
-            input.value = `Analyze this selection: "${data.content}"`;
-            onChatInputChanged();
-            localStorage.removeItem("contextMenuTrigger");
-            const form = document.getElementById("chat-form");
-            if (form) {
-              form.requestSubmit();
-            }
-          }, 500);
-        }
-      } catch (e) {
-        console.error("Failed to parse pending contextMenuTrigger:", e);
-      }
-    }
 
     // Best-effort: close our SSE connection when this taskpane instance goes
     // away (document closed, add-in reloaded, etc). opencode's own /event
@@ -877,8 +886,6 @@ function getActiveDocumentText(timeoutMs = 30000) {
         try {
           range = sheet.getUsedRange();
           range.load([
-            "values",
-            "formulas",
             "address",
             "rowCount",
             "columnCount",
@@ -894,23 +901,50 @@ function getActiveDocumentText(timeoutMs = 30000) {
           return;
         }
 
-        const values = range.values;
-        const formulas = range.formulas;
         const rowCount = range.rowCount;
         const colCount = range.columnCount;
         const startRow = range.rowIndex;
         const startCol = range.columnIndex;
 
+        // Cap size to prevent hangs/crashes on large sheets
+        const maxRows = 100;
+        const maxCols = 20;
+        const isTruncated = rowCount > maxRows || colCount > maxCols;
+        const cappedRows = Math.min(rowCount, maxRows);
+        const cappedCols = Math.min(colCount, maxCols);
+
+        let dataRange;
+        if (isTruncated) {
+          dataRange = sheet.getRangeByIndexes(startRow, startCol, cappedRows, cappedCols);
+        } else {
+          dataRange = range;
+        }
+
+        dataRange.load([
+          "values",
+          "formulas",
+          "address",
+        ]);
+        await context.sync();
+
+        const values = dataRange.values;
+        const formulas = dataRange.formulas;
+
         let markdown = `### Excel Worksheet Summary\n`;
         markdown += `**Active Sheet**: ${sheet.name}\n`;
         markdown += `**Used Range**: ${range.address} (${rowCount} rows x ${colCount} columns)\n\n`;
+
+        if (isTruncated) {
+          markdown += `> [!NOTE]\n`;
+          markdown += `> This worksheet is large. To maintain performance, the preview below is limited to the first ${cappedRows} rows and ${cappedCols} columns.\n\n`;
+        }
 
         const errorCells = [];
         const formulaCells = [];
         const errorList = ["#REF!", "#DIV/0!", "#N/A", "#VALUE!", "#NUM!", "#NAME?", "#NULL!"];
 
-        for (let r = 0; r < rowCount; r++) {
-          for (let c = 0; c < colCount; c++) {
+        for (let r = 0; r < cappedRows; r++) {
+          for (let c = 0; c < cappedCols; c++) {
             const val = values[r][c];
             const formula = formulas[r][c];
             const cellLabel = getColumnLabel(startCol + c) + (startRow + r + 1);
@@ -934,15 +968,15 @@ function getActiveDocumentText(timeoutMs = 30000) {
         markdown += `#### Data Grid\n`;
         let headerRow = `| |`;
         let separatorRow = `|---|`;
-        for (let c = 0; c < colCount; c++) {
+        for (let c = 0; c < cappedCols; c++) {
           headerRow += ` ${getColumnLabel(startCol + c)} |`;
           separatorRow += `---|`;
         }
         markdown += headerRow + `\n` + separatorRow + `\n`;
 
-        for (let r = 0; r < rowCount; r++) {
+        for (let r = 0; r < cappedRows; r++) {
           let rowStr = `| **${startRow + r + 1}** |`;
-          for (let c = 0; c < colCount; c++) {
+          for (let c = 0; c < cappedCols; c++) {
             let cellVal = values[r][c];
             if (cellVal === null || cellVal === undefined) {
               cellVal = "";

@@ -119,16 +119,65 @@ def write_cell_win(cell_address: str, value: str):
             
         cell = sheet.Range(cell_address)
         if value.startswith("="):
-            cell.Formula = value
+          cell.Formula = value
         else:
-            try:
-                if '.' in value:
-                    cell.Value = float(value)
-                else:
-                    cell.Value = int(value)
-            except ValueError:
-                cell.Value = value
+          try:
+            if '.' in value:
+              cell.Value = float(value)
+            else:
+              cell.Value = int(value)
+          except ValueError:
+            cell.Value = value
         return {"success": True, "address": cell_address, "value": value}
+      finally:
+        pythoncom.CoUninitialize()
+
+
+def read_cell_range_win(range_address: str):
+    import win32com.client
+    import pythoncom
+    pythoncom.CoInitialize()
+    try:
+        excel = win32com.client.GetActiveObject("Excel.Application")
+    except Exception:
+        return {"error": "Microsoft Excel is not running or active"}
+        
+    try:
+        wb = excel.ActiveWorkbook
+        if not wb:
+            return {"error": "No active workbook"}
+        sheet = excel.ActiveSheet
+        if not sheet:
+            return {"error": "No active sheet"}
+            
+        target_range = sheet.Range(range_address)
+        row_count = target_range.Rows.Count
+        col_count = target_range.Columns.Count
+        start_row = target_range.Row
+        start_col = target_range.Column
+        
+        values = target_range.Value
+        formulas = target_range.Formula
+        
+        if isinstance(values, tuple):
+            values = [list(row) for row in values]
+        else:
+            values = [[values]]
+            
+        if isinstance(formulas, tuple):
+            formulas = [list(row) for row in formulas]
+        else:
+            formulas = [[formulas]]
+            
+        return {
+            "address": range_address,
+            "rowCount": row_count,
+            "colCount": col_count,
+            "startRow": start_row,
+            "startCol": start_col,
+            "values": values,
+            "formulas": formulas
+        }
     finally:
         pythoncom.CoUninitialize()
 
@@ -260,6 +309,76 @@ def write_cell(cell_address: str, value: str) -> str:
         try:
             result = write_cell_win(cell_address, value)
             return json.dumps(result, indent=2)
+        except Exception as e:
+            return json.dumps({"error": f"Failed to run win32com on Windows: {str(e)}"}, indent=2)
+    else:
+        return json.dumps({"error": f"Unsupported platform: {system}"}, indent=2)
+
+
+@mcp.tool()
+def read_cell_range(range_address: str) -> str:
+    """Reads values and formulas from a specific cell range (e.g. 'A1:C10') in the active worksheet of the running Excel instance."""
+    system = platform.system()
+    if system == "Darwin":
+        js_code = """
+        function run(argv) {
+            try {
+                const rangeAddr = argv[0];
+                const excel = Application("Microsoft Excel");
+                if (!excel.running()) {
+                    return JSON.stringify({ error: "Microsoft Excel is not running" });
+                }
+                if (excel.workbooks.length === 0) {
+                    return JSON.stringify({ error: "No workbooks open" });
+                }
+                const activeSheet = excel.activeWorkbook.activeSheet;
+                const targetRange = activeSheet.range(rangeAddr);
+                const address = targetRange.address();
+                const rowCount = targetRange.rows.count();
+                const colCount = targetRange.columns.count();
+                const startRow = targetRange.row();
+                const startCol = targetRange.column();
+                const values = targetRange.value();
+                const formulas = targetRange.formula();
+                return JSON.stringify({
+                    address: address,
+                    rowCount: rowCount,
+                    colCount: colCount,
+                    startRow: startRow,
+                    startCol: startCol,
+                    values: values,
+                    formulas: formulas
+                });
+            } catch (e) {
+                return JSON.stringify({ error: e.message });
+            }
+        }
+        """
+        try:
+            output = run_jxa_code(js_code, [range_address])
+            data = json.loads(output)
+            if "error" in data:
+                return json.dumps(data, indent=2)
+            
+            rc = data["rowCount"]
+            cc = data["colCount"]
+            data["values"] = normalize_2d(data.get("values"), rc, cc)
+            data["formulas"] = normalize_2d(data.get("formulas"), rc, cc)
+            return json.dumps(data, indent=2)
+        except Exception as e:
+            return json.dumps({"error": f"Failed to run JXA on macOS: {str(e)}"}, indent=2)
+            
+    elif system == "Windows":
+        try:
+            data = read_cell_range_win(range_address)
+            if "error" in data:
+                return json.dumps(data, indent=2)
+            
+            rc = data["rowCount"]
+            cc = data["colCount"]
+            data["values"] = normalize_2d(data.get("values"), rc, cc)
+            data["formulas"] = normalize_2d(data.get("formulas"), rc, cc)
+            return json.dumps(data, indent=2)
         except Exception as e:
             return json.dumps({"error": f"Failed to run win32com on Windows: {str(e)}"}, indent=2)
     else:

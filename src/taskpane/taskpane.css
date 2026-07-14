@@ -541,3 +541,46 @@ body {
 .chat-send--stop .chat-send-icon--stop {
     display: block;
 }
+
+.excel-interactive-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 12px;
+    background-color: #f9f8f7;
+    border-top: 1px solid #edebe9;
+    font-size: 12px;
+}
+
+.excel-selection-status {
+    color: #605e5c;
+    font-weight: 600;
+}
+
+.excel-interactive-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.excel-interactive-btn {
+    flex: 1;
+    padding: 6px 10px;
+    background-color: #fff;
+    border: 1px solid #8a8886;
+    border-radius: 4px;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 500;
+    color: #323130;
+    text-align: center;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.excel-interactive-btn:hover {
+    background-color: #f3f2f1;
+    border-color: #323130;
+}
+
+.excel-interactive-btn:active {
+    background-color: #edebe9;
+}

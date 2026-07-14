@@ -92,6 +92,13 @@
             <p class="doc-suggestions-label">✨ Explore what's inside your document</p>
             <div id="doc-suggestions" class="chat-suggestions doc-suggestions"></div>
         </section>
+        <div id="excel-interactive-panel" class="excel-interactive-panel" style="display: none;">
+            <span id="excel-selection-status" class="excel-selection-status">Selected Range: Active Cell</span>
+            <div class="excel-interactive-actions">
+                <button type="button" id="excel-btn-selection" class="excel-interactive-btn">🔍 Analyze Selection</button>
+                <button type="button" id="excel-btn-sheet" class="excel-interactive-btn">📊 Analyze Sheet</button>
+            </div>
+        </div>
         <form id="chat-form" class="chat-input-row">
             <textarea id="chat-input" class="chat-input" rows="2" placeholder="Ask OpenCode to edit this document..."></textarea>
             <button type="submit" id="chat-send" class="chat-send" aria-label="Send" title="Send" disabled>
